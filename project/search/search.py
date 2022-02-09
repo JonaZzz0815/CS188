@@ -17,7 +17,9 @@ In search.py, you will implement generic search algorithms which are called by
 Pacman agents (in searchAgents.py).
 """
 
+from numpy import frombuffer
 import util
+from util import Stack,Queue,PriorityQueue 
 
 class SearchProblem:
     """
@@ -87,17 +89,68 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fringe = Stack()
+    visited_nodes = []
+    # now = [now_state,path]
+    now = [problem.getStartState(),[]]
+    fringe.push(now)
+    # loop to search
+    while not fringe.isEmpty():
+        now = fringe.pop()
+        if problem.isGoalState(now[0]):
+            return now[1]
+        if now[0] not in visited_nodes:
+            for item in problem.getSuccessors(now[0]):
+                if item[0] not in visited_nodes:
+                    next_node = [item[0],now[1] + [item[1]]]
+                    fringe.push(next_node)
+            visited_nodes.append(now[0])
+    return list()
+    
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fringe = Queue()
+    visited_nodes = []
+    # now = [now_state,path]
+    now = [problem.getStartState(),[]]
+    fringe.push(now)
+    # loop to search
+    while not fringe.isEmpty():
+        now = fringe.pop()
+        if problem.isGoalState(now[0]):
+            return now[1]
+        if now[0] not in visited_nodes:
+            for item in problem.getSuccessors(now[0]):
+                if item[0] not in visited_nodes:
+                    next_node = [item[0],now[1] + [item[1]]]
+                    fringe.push(next_node)
+            visited_nodes.append(now[0])
+    return list()
+    
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fringe = PriorityQueue()
+    visited_nodes = []
+    # now = [now_state,path,cost]
+    now = [problem.getStartState(),[],0]
+    fringe.push(now,now[-1])
+
+    # loop to search
+    while not fringe.isEmpty():
+        now = fringe.pop()
+        if problem.isGoalState(now[0]):
+            return now[1]
+        if now[0] not in visited_nodes:
+            for item in problem.getSuccessors(now[0]):
+                if item[0] not in visited_nodes:
+                    next_node = [item[0],now[1] + [item[1]],now[-1] +item[-1] ]
+                    fringe.update(next_node,next_node[-1])
+            visited_nodes.append(now[0])
+    return list()
 
 def nullHeuristic(state, problem=None):
     """
@@ -109,7 +162,24 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fringe = PriorityQueue()
+    visited_nodes = []
+    # now = [now_state,path,cost]
+    now = [problem.getStartState(),[],0]
+    fringe.push(now,now[-1]+ heuristic(now[0],problem))
+
+    # loop to search
+    while not fringe.isEmpty():
+        now = fringe.pop()
+        if problem.isGoalState(now[0]):
+            return now[1]
+        if now[0] not in visited_nodes:
+            for item in problem.getSuccessors(now[0]):
+                if item[0] not in visited_nodes:
+                    next_node = [item[0],now[1] + [item[1]],now[-1] +item[-1] ]
+                    fringe.update(next_node,next_node[-1] + heuristic(next_node[0],problem))
+            visited_nodes.append(now[0])
+    return list()
 
 
 # Abbreviations

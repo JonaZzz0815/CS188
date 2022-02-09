@@ -35,6 +35,9 @@ Good luck and happy searching!
 """
 
 from typing import List, Tuple, Any
+from sklearn import utils
+
+from sqlalchemy import false
 from game import Directions
 from game import Agent
 from game import Actions
@@ -292,6 +295,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        # NO CHANGE
 
     def getStartState(self):
         """
@@ -299,14 +303,19 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.startingPosition
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # check if all corners is in state
+        arr = [(corner in state) for corner in self.corners]
+        if sum(arr) == 4:
+            return True
+        return False
+        
 
     def getSuccessors(self, state: Any):
         """
@@ -329,6 +338,17 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+            x,y = state[:2]
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+            
+            if not hitsWall:
+                if (nextx, nexty) in self.corners and (nextx, nexty) not in state:
+                    pos = (nextx, nexty) + state[2:] + ((nextx,nexty),)
+                else:
+                    pos = (nextx, nexty) + state[2:]
+                successors.append([pos,action,1])
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -364,7 +384,23 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    sum_manhattan_dis = 0
+    # store food next in form : key:pos,val:dis
+    food_nexts = {}
+    x,y = state[:2]
+    # init all valid corner to be zero
+    for corner in corners:
+        if corner not in state[2:]:
+            food_nexts[corner] = 0
+    
+    while len(food_nexts) > 0:
+        for pos in food_nexts.keys():
+            food_nexts[pos] = util.manhattanDistance((x,y),pos)
+        x,y = min(food_nexts,key = lambda x:food_nexts[x])
+        sum_manhattan_dis += food_nexts[(x,y)]
+        # remove the corner and its value
+        del food_nexts[(x,y)]
+    return sum_manhattan_dis
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -458,7 +494,20 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    # find the furthest food
+    food_nexts  = {}
+    x,y = position
+    for food in foodGrid.asList():
+        food_nexts[food] = 0
+    # no food case
+    if len(food_nexts) < 1:
+        return 0
+    # normal case
+    for pos in food_nexts.keys():
+        food_nexts[pos] = mazeDistance((x,y),pos,
+                            problem.startingGameState)
+    x,y = max(food_nexts,key=lambda i:food_nexts[i])
+    return food_nexts[(x,y)]
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -489,7 +538,7 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return search.aStarSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -525,7 +574,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.food[x][y]
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:
     """
