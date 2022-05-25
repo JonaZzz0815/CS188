@@ -102,7 +102,40 @@ def joinFactors(factors: ValuesView[Factor]):
 
 
     "*** YOUR CODE HERE ***"
-    raiseNotDefined()
+    condition_var = []
+    uncondition_var = []
+    # get all unconditional var
+    for fac in factors:
+        for unc in fac.unconditionedVariables():
+            if unc not in uncondition_var:
+                uncondition_var.append(unc)
+    # get all conditional var
+    # get varDomain dict
+    varDomain_dict = {}
+    for fac in factors:
+        cur_dict = fac.variableDomainsDict()
+        varDomain_dict.update(cur_dict)
+        for con in fac.conditionedVariables():
+            if (con not in uncondition_var) and (con not in condition_var):
+                condition_var.append(con)
+    
+    joinfac =  Factor(uncondition_var, condition_var, varDomain_dict)
+    assignments = joinfac.getAllPossibleAssignmentDicts()
+    # assign the probability
+    for item in assignments:
+        prob = 1
+        dic = {}
+        for fac in factors:
+            # get all varbs
+            varbs = list(fac.conditionedVariables().union(fac.unconditionedVariables()))
+            values = [item[varb] for varb in varbs]
+            # get the dict of cur factor
+            for i in range(len(varbs)):
+                dic[varbs[i]] = values[i]
+            prob *= fac.getProbability(dic)
+        joinfac.setProbability(dic, prob)
+
+    return joinfac
     "*** END YOUR CODE HERE ***"
 
 ########### ########### ###########
@@ -153,7 +186,26 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        conditional_var = factor.conditionedVariables()
+        unconditional_var = factor.unconditionedVariables()
+        # remove the elimination varb from unconditional var
+        unconditional_var.discard(eliminationVariable)
+        varbDomian_dict = factor.variableDomainsDict()
+        eliminate_fac = Factor(unconditional_var, conditional_var, varbDomian_dict)
+        # sum up the elimination varb
+        orignal_assignments = factor.getAllPossibleAssignmentDicts()
+        assignments = eliminate_fac.getAllPossibleAssignmentDicts()
+        for item in assignments:
+            prob = 0
+            keys = list(item.keys())
+            values = list(item.values())
+            for ori_item in orignal_assignments:
+                ori_values = [ori_item[k] for k in keys]
+                if ori_values == values:
+                    prob += factor.getProbability(ori_item)
+            eliminate_fac.setProbability(item, prob)
+            
+        return eliminate_fac
         "*** END YOUR CODE HERE ***"
 
     return eliminate
